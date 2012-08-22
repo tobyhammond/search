@@ -1,4 +1,4 @@
-import re
+import re, logging
 
 from google.appengine.api import search as search_api
 
@@ -155,7 +155,15 @@ class SearchQuery(object):
         for q in args:
             self.query.add_q(q)
         if kwargs:
-            self.query.add_q(ql.Q(**kwargs))
+            for k, v in kwargs.items():
+                v_is_list = bool(iter(v)) and issubclass(type(v), basestring)
+                if v_is_list:
+                    nq = ql.Q(**{k:v[0]})
+                    for value in v[1:]:
+                        nq |= ql.Q(**{k:value})
+                    self.query.add_q(nq)
+                else:
+                    self.query.add_q(ql.Q(**{k:v}))
         return self
 
     def order_by(self, *fields):
