@@ -135,6 +135,11 @@ class Index(object):
         return list(documents)
 
     def add(self, documents):
+        """ Deprecated in SDK 1.7.4 and will removed in 1.7.5 , use put instead 
+        """
+        return self.put(documents)
+
+    def put(self, documents):
         """Add `documents` to this index"""
 
         def get_fields(d):
@@ -158,7 +163,7 @@ class Index(object):
             search_doc = search_api.Document(doc_id=d.doc_id, fields=get_fields(d))
             search_docs.append(search_doc)
 
-        return self._index.add(search_docs)
+        return self._index.put(search_docs)
 
     def remove(self, doc_ids):
         """Straight up proxy to the underlying index's `remove` method"""
