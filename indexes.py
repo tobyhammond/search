@@ -166,8 +166,13 @@ class Index(object):
         return self._index.put(search_docs)
 
     def remove(self, doc_ids):
+        """ Deprecated in SDK 1.7.4 and will removed in 1.7.5 , use `delete` instead 
+        """
+        return self.delete(doc_ids)
+
+    def delete(self, doc_ids):
         """Straight up proxy to the underlying index's `remove` method"""
-        return self._index.remove(doc_ids)
+        return self._index.delete(doc_ids)
 
     def purge(self):
         """Deletes all documents from this index.
