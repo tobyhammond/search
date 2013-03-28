@@ -150,6 +150,12 @@ class TextField(Field):
         to convert the value to an `IndexedValue` so that we don't re-index it
         when calling `to_search_value`.
         """
+        from .ql import FORBIDDEN_VALUE_REGEX
+        try:
+            value = FORBIDDEN_VALUE_REGEX.sub('', value)
+        except TypeError:
+            pass
+
         if self.indexer is None:
             return value
         return IndexedValue(value)
