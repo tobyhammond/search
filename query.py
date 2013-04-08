@@ -203,9 +203,6 @@ class SearchQuery(object):
         limit = self._limit
         sort_expressions = self._sorts
         query_string = str(self.query)
-        import traceback
-        logging.info(traceback.format_stack())
-        logging.info(query_string)
 
         sort_options = search_api.SortOptions(expressions=sort_expressions)
         search_options = search_api.QueryOptions(
