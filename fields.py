@@ -150,19 +150,18 @@ class TextField(Field):
         to convert the value to an `IndexedValue` so that we don't re-index it
         when calling `to_search_value`.
         """
-        from .ql import FORBIDDEN_VALUE_REGEX
-        try:
-            value = FORBIDDEN_VALUE_REGEX.sub('', value)
-        except TypeError:
-            pass
-
         if self.indexer is None:
             return value
         return IndexedValue(value)
 
     def prep_value_for_filter(self, value):
-        # We don't want to index the given text value when filtering with it
-        # so pretend it's already been indexed by wrapping it in IndexedValue.
+        # This is a bad hack
+        from .ql import FORBIDDEN_VALUE_REGEX
+        try:
+            value = FORBIDDEN_VALUE_REGEX.sub(' ', value)
+        except TypeError:
+            pass
+
         return self.to_search_value(IndexedValue(value))
 
 
