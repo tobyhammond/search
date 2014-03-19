@@ -61,6 +61,7 @@ class SearchQuery(object):
         self._next_cursor = None
 
         self._sorts = []
+        self._match_scorer = None
 
         self._offset = 0
         self._limit = self.MAX_LIMIT
@@ -208,6 +209,10 @@ class SearchQuery(object):
         logging.info('Raw %s' % query_string)
         return self
 
+    def score_with(self, match_scorer):
+        self._match_scorer = match_scorer
+        return self
+
     def _run_query(self):
         offset = self._offset
         limit = self._limit
@@ -222,7 +227,13 @@ class SearchQuery(object):
 
         logging.info('Execute query %s' % query_string)
 
-        sort_options = search_api.SortOptions(expressions=sort_expressions)
+        kwargs = {
+            "expressions": sort_expressions
+        }
+        if self._match_scorer:
+            kwargs["match_scorer"] = self._match_scorer
+
+        sort_options = search_api.SortOptions(**kwargs)
         search_options = search_api.QueryOptions(
             offset=offset,
             limit=limit,
