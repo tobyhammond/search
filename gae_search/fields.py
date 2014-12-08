@@ -291,8 +291,16 @@ class DateField(Field):
             return self.none_value()
         if isinstance(value, (date, datetime)):
             return value
+
         if isinstance(value, basestring):
-            return datetime.strptime(value, self.DATETIME_FORMAT).date()
+            try:
+                return datetime.strptime(value, self.DATETIME_FORMAT)
+            except ValueError:
+                pass
+            try:
+                return datetime.strptime(value, self.DATE_FORMAT).date()
+            except ValueError:
+                pass
         raise TypeError(value)
 
     def to_python(self, value):
