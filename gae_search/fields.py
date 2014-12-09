@@ -1,5 +1,7 @@
 from datetime import date, datetime
 
+from django.utils import timezone
+
 from .errors import FieldError
 
 
@@ -289,7 +291,15 @@ class DateField(Field):
         value = super(DateField, self).to_search_value(value)
         if value is None:
             return self.none_value()
-        if isinstance(value, (date, datetime)):
+
+        if isinstance(value, datetime):
+            if value.tzinfo is not None:
+                # Convert timezone-aware to naive UTC
+                return value.astimezone(timezone.utc).replace(tzinfo=None)
+            else:
+                return value
+
+        if isinstance(value, date):
             return value
 
         if isinstance(value, basestring):
@@ -301,6 +311,7 @@ class DateField(Field):
                 return datetime.strptime(value, self.DATE_FORMAT).date()
             except ValueError:
                 pass
+
         raise TypeError(value)
 
     def to_python(self, value):
