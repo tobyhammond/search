@@ -185,7 +185,8 @@ class SearchQuery(object):
         new_query._sorts = self._sorts
         new_query._snippeted_fields = self._snippeted_fields
         new_query._returned_expressions = self._returned_expressions
-        new_query.query = self.query
+        new_query._match_scorer = self._match_scorer
+        new_query.query = self.query._clone()
 
         # XXX: Copy raw query in clone
         new_query._raw_query = self._raw_query
