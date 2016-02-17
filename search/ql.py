@@ -3,8 +3,7 @@ import re
 from google.appengine.api import search as search_api
 
 from .errors import FieldLookupError, BadValueError
-
-FORBIDDEN_VALUE_REGEX = re.compile(ur'([^_.@ \w-]+)', re.UNICODE)
+from .utils import clean_value
 
 
 class GeoQueryArguments(object):
@@ -223,7 +222,7 @@ class Query(object):
         """Remove any punctuation that might break the search API's lexer
         (e.g. '^') from the given value.
         """
-        return FORBIDDEN_VALUE_REGEX.sub('', value)
+        return clean_value(value)
 
     def _clone(self):
         new_q = type(self)(

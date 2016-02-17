@@ -4,18 +4,7 @@ import re
 import sys
 
 from .globs import CHARACTER_MAP, FOREIGN_CHARACTERS_REGEX
-
-
-UNRECOGNISED_FIRST_LETTER_STRING = u'zzz'
-PUNCTUATION_REGEX = re.compile(ur'[^\w -\'"+]', re.U)
-WHITESPACE_REGEX = re.compile(ur'[\s]+', re.U)
-
-
-def clean_value(value):
-    value = value or u''
-    value = PUNCTUATION_REGEX.sub(u' ', value)
-    value = WHITESPACE_REGEX.sub(u' ', value)
-    return value.strip()
+from .utils import clean_value
 
 
 def _startswith(string, min_size=0, max_size=sys.maxint, fn=lambda s:s):
@@ -102,7 +91,7 @@ def startswith(string, **kwargs):
                 anglicised_segment = anglicise(segment)
                 if anglicised_segment != segment:
                     index.append(anglicised_segment)
-    return index
+    return list(set(index))
 
 
 def firstletter(string, ignore=None):
