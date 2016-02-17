@@ -5,6 +5,7 @@ from search.fields import TextField
 from search.query import SearchQuery
 from search.ql import Q
 
+
 class FakeDocument(DocumentModel):
     foo = TextField()
 
