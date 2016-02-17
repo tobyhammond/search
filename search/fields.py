@@ -109,6 +109,9 @@ class Field(object):
         for DateFields, where the filter value in the query is different to
         the value actually given to the search API.
         """
+        if isinstance(value, basestring):
+            value = clean_value(value)
+
         return value
 
 
