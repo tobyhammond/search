@@ -3,7 +3,7 @@ from datetime import date, datetime
 from google.appengine.api.search import GeoPoint
 
 from .errors import FieldError
-
+from .utils import clean_value
 
 MAX_SEARCH_API_INT_64 = 18446744073709551616L
 
@@ -158,7 +158,7 @@ class TextField(Field):
     def prep_value_for_filter(self, value, **kwargs):
         # We don't want to index the given text value when filtering with it
         # so pretend it's already been indexed by wrapping it in IndexedValue.
-        return self.to_search_value(IndexedValue(value))
+        return clean_value(self.to_search_value(IndexedValue(value)))
 
 
 class HtmlField(TextField):
