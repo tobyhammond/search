@@ -69,6 +69,15 @@ class TestSearchQueryAdapter(TestCase):
 
         self.assertSameList(qs, search_qs.as_model_objects(), ordered=True)
 
+    def test_keywords(self):
+        Foo.objects.create(name='David')
+        Foo.objects.create(name='Bill')
+
+        qs = Foo.objects.all()
+        search_qs = SearchQueryAdapter.from_queryset(qs).keywords("Bill")
+
+        self.assertEqual(1, search_qs.count())
+
     @unittest.skip("TODO")
     def test_ordering_copied(self):
         asc_qs = FooWithMeta.objects.order_by('name')

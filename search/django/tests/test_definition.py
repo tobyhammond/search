@@ -9,6 +9,7 @@ from ... import (
 )
 from ...query import SearchQuery
 
+from ..adapters import SearchQueryAdapter
 from ..utils import (
     disable_indexing,
     get_uid,
@@ -44,6 +45,25 @@ class TestSearchable(TestCase):
         # index and document class somehow
         query = Foo.search_query()
         self.assertEqual(type(query), SearchQuery)
+
+    def test_search_method_on_queryset(self):
+        Foo.objects.create(name="Box")
+        Foo.objects.create(name="Square")
+
+        search_qs = Foo.objects.filter(name="Box").search()
+        self.assertTrue(isinstance(search_qs, SearchQueryAdapter))
+
+        self.assertEqual(1, len(search_qs))
+
+
+    def test_search_method_on_queryset_with_keywords(self):
+        Foo.objects.create(name="Box")
+        Foo.objects.create(name="Square")
+
+        search_qs = Foo.objects.all().search('Box')
+        self.assertTrue(isinstance(search_qs, SearchQueryAdapter))
+
+        self.assertEqual(1, len(search_qs))
 
     def test_index_on_save_of_instance(self):
         related1 = Related.objects.create(name="Book")

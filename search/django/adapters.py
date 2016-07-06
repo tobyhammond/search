@@ -255,3 +255,8 @@ class SearchQueryAdapter(object):
         clone._query = qs
         return clone
 
+    def keywords(self, query_string):
+        qs = self._query.keywords(query_string)
+        clone = self._clone()
+        clone._query = qs
+        return clone

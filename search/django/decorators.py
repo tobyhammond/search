@@ -4,6 +4,7 @@ from django.utils.module_loading import import_string
 
 from ..indexes import Index
 
+from .adapters import SearchQueryAdapter
 from .documents import DynamicDocumentFactory
 from .registry import registry
 from .utils import (
@@ -75,8 +76,25 @@ def add_search_query_method(model_class):
     if not getattr(model_class, "search_query", None):
         model_class.search_query = classmethod(search_query)
 
+def add_search_queryset_method(model_class):
+    def search(self, keywords=None):
+        search_qs = SearchQueryAdapter.from_queryset(self)
 
-def searchable(document_class=None, index_name=None, rank=None):
+        if keywords:
+            search_qs = search_qs.keywords(keywords)
+
+        return search_qs
+
+    queryset_class = model_class.objects._queryset_class
+    if not getattr(queryset_class, "search", None):
+        queryset_class.search = search
+
+
+def searchable(
+        document_class=None,
+        index_name=None,
+        rank=None,
+        add_to_default_queryset=True):
     """Make the decorated model searchable. Can be used to decorate a model
     multiple times should that model need to be indexed in several indexes.
 
@@ -118,6 +136,10 @@ def searchable(document_class=None, index_name=None, rank=None):
 
         connect_signals(model_class, _document_class, index.name, rank=rank)
         add_search_query_method(model_class)
+
+        if add_to_default_queryset:
+            add_search_queryset_method(model_class)
+
         model_class._search_meta = (index.name, _document_class, rank)
         return model_class
 
