@@ -1,3 +1,4 @@
+git+https://github.com/potatolondon/djangae.git@v0.9.5#egg=djangae
 Graphy==1.0.0
 GoogleAppEngineMapReduce==1.9.22.0
 GoogleAppEnginePipeline==1.9.21.1
