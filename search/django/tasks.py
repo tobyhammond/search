@@ -1,6 +1,7 @@
 import logging
 
 from google.appengine.ext.deferred import defer
+
 from django.apps import apps
 from django.conf import settings
 
@@ -8,8 +9,8 @@ from djangae.contrib.mappers.pipes import MapReduceTask
 
 from ..indexes import Index
 
-from .registry import registry
 from .indexes import get_index_for_doc
+from .registry import registry
 from .utils import get_rank
 
 
@@ -26,9 +27,11 @@ class ReindexMapReduceTask(MapReduceTask):
 
     @staticmethod
     def map(instance, *args, **kwargs):
+        model = type(instance)
+        search_meta = registry.get(model)
 
-        if hasattr(instance, '_search_meta'):
-            index_name, document_class, rank = instance._search_meta
+        if search_meta:
+            index_name, document_class, rank = search_meta
             doc = document_class(
                 doc_id=str(instance.pk),
                 _rank=get_rank(instance, rank=rank)
@@ -37,11 +40,11 @@ class ReindexMapReduceTask(MapReduceTask):
             index = Index(index_name)
             index.put(doc)
 
-            logging.info(u"Indexed {0}: {1}".format(type(instance).__name__, instance.pk))
+            logging.info(u"Indexed {}: {}".format(model.__name__, instance.pk))
         else:
             logging.info(
-                u"Entity {0}: has no '_search_meta' property"
-                .format(type(instance).__name__)
+                u"Model {} isn't registered as being searchable"
+                .format(model.__name__)
             )
 
 
@@ -107,7 +110,7 @@ def purge_index_for_doc(doc_class, batch_size=None):
 
 def purge_indexes():
     """Purge all search indexes"""
-    for model, doc_cls in registry.iteritems():
+    for (model, (index_name, doc_cls, rank)) in registry.iteritems():
         defer(
             purge_index_for_doc,
             doc_class=doc_cls,
@@ -145,7 +148,7 @@ def remove_orphaned_docs_for_app_model(app_label, model_name, start_id=None, bat
     """
 
     model = apps.get_model(app_label, model_name)
-    doc = registry.get(model)
+    doc = registry.get(model)[1]
     index = get_index_for_doc(doc)
     doc_ids = index.get_range(
         ids_only=True,

@@ -10,6 +10,7 @@ from ... import (
 from ...query import SearchQuery
 
 from ..adapters import SearchQueryAdapter
+from ..registry import registry
 from ..utils import (
     disable_indexing,
     get_uid,
@@ -159,7 +160,7 @@ class TestSearchableMeta(TestCase):
         self.assertEqual(type(query), SearchQuery)
 
     def test_field_types(self):
-        document_meta = FooWithMeta._search_meta[1]._doc_meta
+        document_meta = registry[FooWithMeta][1]._doc_meta
         self.assertIsInstance(
             document_meta.fields['name'],
             search_fields.TextField
@@ -171,7 +172,7 @@ class TestSearchableMeta(TestCase):
         )
 
     def test_index(self):
-        document_cls = FooWithMeta._search_meta[1]
+        document_cls = registry[FooWithMeta][1]
 
         related = Related.objects.create(name=u"Boôk")
         thing1 = FooWithMeta.objects.create(

@@ -68,13 +68,14 @@ def add_search_query_method(model_class):
             index_name = get_default_index_name(model_class)
 
         if not document_class:
-            document_class = registry[model_class]
+            document_class = registry[model_class][1]
 
         index = Index(index_name)
         return index.search(document_class=document_class, ids_only=ids_only)
 
     if not getattr(model_class, "search_query", None):
         model_class.search_query = classmethod(search_query)
+
 
 def add_search_queryset_method(model_class):
     def search(self, keywords=None):
@@ -94,7 +95,8 @@ def searchable(
         document_class=None,
         index_name=None,
         rank=None,
-        add_to_default_queryset=True):
+        add_to_default_queryset=True
+    ):
     """Make the decorated model searchable. Can be used to decorate a model
     multiple times should that model need to be indexed in several indexes.
 
@@ -131,16 +133,13 @@ def searchable(
             _document_class = doc_factory.create()
 
         index = Index(index_name or get_default_index_name(model_class))
-
-        registry[model_class] = _document_class
-
         connect_signals(model_class, _document_class, index.name, rank=rank)
-        add_search_query_method(model_class)
 
+        add_search_query_method(model_class)
         if add_to_default_queryset:
             add_search_queryset_method(model_class)
 
-        model_class._search_meta = (index.name, _document_class, rank)
+        registry[model_class] = (index.name, _document_class, rank)
         return model_class
 
     return decorator
