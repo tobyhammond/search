@@ -3,12 +3,13 @@ from django.core import paginator as django_paginator
 from .adapters import SearchQueryAdapter
 
 
-class IsSearchinMixin(object):
+class IsSearchingMixin(object):
+
     def is_searching(self):
         return isinstance(self.object_list, SearchQueryAdapter)
 
 
-class SearchPage(django_paginator.Page, IsSearchinMixin):
+class SearchPage(django_paginator.Page, IsSearchingMixin):
     _objects = None
 
     def load_objects(self, lazy=True):
@@ -20,14 +21,14 @@ class SearchPage(django_paginator.Page, IsSearchinMixin):
 
         # force evaluation of objects in the page
         if not lazy and not isinstance(self._objects, list):
-            self._objects = list(o for o in self._objects)
+            self._objects = list(self._objects)
 
     def __iter__(self):
         self.load_objects()
         return iter(self._objects)
 
 
-class SearchPaginator(django_paginator.Paginator, IsSearchinMixin):
+class SearchPaginator(django_paginator.Paginator, IsSearchingMixin):
     _page = None
 
     def _get_page(self, *args, **kwargs):
@@ -46,6 +47,7 @@ class SearchPaginator(django_paginator.Paginator, IsSearchinMixin):
 
     def page(self, number):
         assert not self.orphans, "SearchPaginator does not support orphans"
+
         number = self.validate_number(number)
         bottom = (number - 1) * self.per_page
         top = bottom + self.per_page
@@ -61,6 +63,6 @@ class SearchPaginator(django_paginator.Paginator, IsSearchinMixin):
         # sliced objects list within the page
         if self.is_searching() and self._page is not None:
             return self._page.object_list.count()
-
         return super(SearchPaginator, self)._get_count()
+
     count = property(_get_count)
