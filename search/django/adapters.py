@@ -1,9 +1,10 @@
 import logging
 import operator
-from django.db.models import Q as djangoQ
+
+from django.db.models import Q as DjangoQ
 from django.db.models.lookups import Lookup
 
-from ..ql import Q as searchQ
+from ..ql import Q as SearchQ
 
 
 def resolve_filter_value(v):
@@ -52,7 +53,7 @@ class SearchQueryAdapter(object):
 
         for child in children:
             if isinstance(child, tuple):
-                q = searchQ(
+                q = SearchQ(
                     **{
                         "{}__{}".format(child[0], child[1]): child[2]
                     }
@@ -64,16 +65,7 @@ class SearchQueryAdapter(object):
                 search_query = cls.filters_to_search_query(child, model, query=search_query)
 
         if q_objects is not None:
-            # This is essentially a copy of the logic in Query.add_q
-            # The trouble is that add_q always ANDs added Q objects but in this case
-            # we want to specify the connector ourselves
-            if search_query.query._gathered_q is None:
-                search_query.query._gathered_q = q_objects
-            else:
-                search_query.query._gathered_q = getattr(
-                    search_query.query._gathered_q,
-                    '__{}__'.format(connector.lower())
-                )(q_objects)
+            search_query.query.add_q(q_objects, conn="OR")
 
         return search_query
 
@@ -181,7 +173,7 @@ class SearchQueryAdapter(object):
         """
 
         _args = [
-            self.get_filters_from_queryset(_q) if type(_q) is djangoQ else _q
+            self.get_filters_from_queryset(_q) if type(_q) is DjangoQ else _q
             for _q in args
         ]
         _kwargs = {k: resolve_filter_value(v) for k, v in kwargs.iteritems()}
