@@ -198,7 +198,5 @@ disable_indexing = DisableIndexing()
 enable_indexing = EnableIndexing()
 
 
-def django_qs_to_search_qs(queryset):
-    """Converts django queryset into search queryset that acts just like the django one,
-    unless it already is of SearchQueryAdapter type"""
-    return SearchQueryAdapter.from_queryset(queryset)
+def get_datetime_field():
+    return fields.TZDateTimeField if settings.USE_TZ else fields.DateTimeField

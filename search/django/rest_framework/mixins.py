@@ -7,7 +7,7 @@ from rest_framework import response
 from ...indexers import clean_value
 
 from ..adapters import SearchQueryAdapter
-from ..utils import django_qs_to_search_qs
+
 from .filters import KeywordSearch
 from .pagination import SearchPageNumberPagination
 
@@ -41,7 +41,8 @@ class SearchMixin(object):
         endpoint. The return value can either be a `search.Query` or a
         `searching.SearchQueryAdapter`.
         """
-        return self.search_queryset or django_qs_to_search_qs(self.get_queryset())
+        django_qs = self.get_queryset()
+        return self.search_queryset or SearchQueryAdapter.from_queryset(django_qs)
 
     def list(self, request, *args, **kwargs):
         django_queryset = self.get_queryset()
@@ -49,16 +50,9 @@ class SearchMixin(object):
         # If the view is being searched, get the search queryset instead
         if self.is_searching():
             queryset = self.get_search_queryset()
-            # We need a `SearchQueryAdapter` to fool the filtering mechanisms
-            # into thinking we have a normal Django queryset so convert here
-            # if `get_search_queryset` didn't return one
-            if not isinstance(queryset, SearchQueryAdapter):
-                model = django_queryset.model
-                queryset = SearchQueryAdapter(query=queryset, model=model)
         else:
             queryset = django_queryset
 
-        # The rest is just copy-pasted from `rest_framework.mixins.ListModelMixin`
         queryset = self.filter_queryset(queryset)
 
         try:

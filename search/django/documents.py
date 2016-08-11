@@ -1,9 +1,12 @@
+from django.conf import settings
 from django.core import exceptions
 from django.db import models
-from django.conf import settings
+
 from djangae import fields as djangae_fields
 
 from .. import fields, indexes
+
+from .utils import get_datetime_field
 
 
 class Document(indexes.DocumentModel):
@@ -39,7 +42,8 @@ class Document(indexes.DocumentModel):
 
 
 class DocumentOptions(object):
-    """Container class for meta options defined in a Django model's SearchMeta subclass
+    """Container class for meta options defined in a Django model's SearchMeta
+    subclass.
     """
     def __init__(self, meta):
         self.field_names = getattr(meta, 'fields', [])
@@ -50,8 +54,8 @@ class DocumentOptions(object):
 
 
 class DynamicDocumentFactory(object):
-    """Used to create a class inheriting from DynamicDocument with fields defined
-    in a SearchMeta subclass
+    """Used to create a class inheriting from DynamicDocument with fields
+    defined in a SearchMeta subclass.
     """
     django_type_map = {
         models.AutoField: fields.IntegerField,
@@ -126,7 +130,7 @@ class DynamicDocumentFactory(object):
 
         else:
             if isinstance(django_field, models.DateTimeField):
-                field_cls = self.get_datetime_field()
+                field_cls = get_datetime_field()
             else:
                 field_cls = self.django_type_map.get(django_field.__class__)
 
@@ -142,27 +146,16 @@ class DynamicDocumentFactory(object):
 
         return field
 
-    @staticmethod
-    def get_datetime_field():
-        return (
-            fields.TZDateTimeField
-            if settings.USE_TZ
-            else fields.DateTimeField
-        )
-
 
 class DynamicDocument(Document):
-    """Document class from which dynamically created documents inherit. These documents are defined using
-    a SearchMeta subclass on a DjangoModel decorated by @searchable.
+    """Document class from which dynamically created documents inherit. These
+    documents are defined using a SearchMeta subclass on a Django model
+    decorated by @searchable.
     """
-    def build(self, instance):
-        for field_name in self._doc_meta.fields.keys():
-
-            value = self.map_field_value(instance, field_name)
-
-            setattr(self, field_name, value)
-
     def map_field_value(self, instance, field_name):
+        """Map the model instance value to the value to be indexed on the
+        document.
+        """
         meta = self._doc_meta
 
         if field_name in meta.field_mappers:
@@ -170,12 +163,21 @@ class DynamicDocument(Document):
         else:
             value = getattr(instance, field_name)
 
+            # This is the best guess for if we get a sequence back
             if isinstance(value, (list, set,)):
                 value = u" ".join(value)
 
         return value
 
+    def build(self, instance):
+        for field_name in self._doc_meta.fields:
+            value = self.map_field_value(instance, field_name)
+            setattr(self, field_name, value)
+
     def build_corpus(self):
+        # Some default behaviour for building the corpus. Indexes the plain
+        # content of each field in the corpus plus the indexed version of the
+        # content
         corpus_meta = self._doc_meta.corpus
 
         if not corpus_meta:
