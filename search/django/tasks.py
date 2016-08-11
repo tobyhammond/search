@@ -8,7 +8,6 @@ from djangae.contrib.mappers.pipes import MapReduceTask
 
 from ..indexes import Index
 
-from .conversion import build_id
 from .registry import registry
 from .indexes import get_index_for_doc
 from .utils import get_rank
@@ -20,10 +19,6 @@ DELETE_BATCH_SIZE = 200
 # We can retrive up to 1000 in one call but limit to 500 to match
 # datatore __in query limit.
 RETRIEVE_BATCH_SIZE = 500
-
-
-def pk_from_doc_id(doc_id):
-    return doc_id.split(':')[-1]
 
 
 class ReindexMapReduceTask(MapReduceTask):
@@ -177,11 +172,11 @@ def remove_orphaned_docs_for_app_model(app_label, model_name, start_id=None, bat
     )
 
     # Document ids are string, pks are longs, so ensure types match.
-    pks_from_search = map(long, map(pk_from_doc_id, doc_ids))
+    pks_from_search = map(long, map(long, doc_ids))
     pks_from_datastore = model.objects.filter(pk__in=pks_from_search).values_list('pk', flat=True)
 
     orphan_doc_ids = [
-        build_id(model, pk) for pk in
+        str(pk) for pk in
         set(pks_from_search).difference(pks_from_datastore)
     ]
 
