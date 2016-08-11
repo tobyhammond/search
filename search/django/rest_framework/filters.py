@@ -2,7 +2,7 @@ import string as string_module
 
 
 QUOTES = (u"'", u'"')
-ALLOWED_PUNCTUATIONS = (u"_", u"-")
+ALLOWED_PUNCTUATION = (u"_", u"-")
 
 
 class KeywordSearch(object):
@@ -45,7 +45,7 @@ def strip_special_search_characters(string):
     punctuation to avoid brokenness.
     """
     for char in string_module.punctuation:
-        if char not in ALLOWED_PUNCTUATIONS:
+        if char not in ALLOWED_PUNCTUATION:
             string = string.replace(char, u"")
     return string
 
@@ -55,7 +55,8 @@ def strip_multi_value_operators(string):
     multi-value query, and raise an error as it expects a second argument
     in this query language format. To avoid this we strip the `AND` / `OR`
     operators tokens from the end of query string. This does not stop
-    a valid multi value query executing as expected."""
+    a valid multi value query executing as expected.
+    """
     # the search API source code lists many operators in the tokenNames
     # iterable, but it feels cleaner for now to explicitly name only the ones
     # we are interested in here
