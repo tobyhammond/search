@@ -67,7 +67,7 @@ class SearchQueryAdapter(object):
                 search_query = cls.filters_to_search_query(child, model, query=search_query)
 
         if q_objects is not None:
-            search_query.query.add_q(q_objects, conn="OR")
+            search_query.query.add_q(q_objects, conn=connector.upper())
 
         return search_query
 
