@@ -5,7 +5,7 @@ from django.utils.module_loading import import_string
 from ..indexes import Index
 
 from .adapters import SearchQueryAdapter
-from .documents import DynamicDocumentFactory
+from .documents import document_factory
 from .registry import registry
 from .utils import (
     get_default_index_name,
@@ -46,47 +46,22 @@ def connect_signals(model_class, document_class, index_name, rank=None):
             index.delete(str(instance.pk))
 
 
-def add_search_query_method(model_class):
-    """Add a method to the model class that will return a search query for
-    that model.
-    """
-    def search_query(cls, ids_only=None, document_class=None, index_name=None):
-        """Return a search query that will search this model.
+def add_search_queryset_method(model_class):
+    """Add a `search` method to the model's default manager queryset class"""
 
-        Args:
-            * ids_only: Whether to return just the IDs of the documents in the
-                search index, or return the full documents themselves.
-            * document_class: The document class to instantiate the results
-                from the query with.
-            * index_name: The name of the index to search
+    def search(self, keywords=None):
+        """Create a search query for this model.
 
         Returns:
-            A `search.SearchQuery` bound to the given document class and index.
+            A search adapter that can be used to filter and keyword search
+            objects in this model's index.
         """
-        # If there's no index name given, use the default
-        if not index_name:
-            index_name = get_default_index_name(model_class)
+        q = SearchQueryAdapter.from_queryset(self)
+        return q.keywords(keywords) if keywords else q
 
-        if not document_class:
-            document_class = registry[model_class][1]
+    # Add the method to the default manager's queryset as a best guess
+    queryset_class = model_class._default_manager._queryset_class
 
-        index = Index(index_name)
-        return index.search(document_class=document_class, ids_only=ids_only)
-
-    if not getattr(model_class, "search_query", None):
-        model_class.search_query = classmethod(search_query)
-
-
-def add_search_queryset_method(model_class):
-    def search(self, keywords=None):
-        search_qs = SearchQueryAdapter.from_queryset(self)
-
-        if keywords:
-            search_qs = search_qs.keywords(keywords)
-
-        return search_qs
-
-    queryset_class = model_class.objects._queryset_class
     if not getattr(queryset_class, "search", None):
         queryset_class.search = search
 
@@ -95,7 +70,7 @@ def searchable(
         document_class=None,
         index_name=None,
         rank=None,
-        add_to_default_queryset=True
+        add_default_queryset_search_method=True
     ):
     """Make the decorated model searchable. Can be used to decorate a model
     multiple times should that model need to be indexed in several indexes.
@@ -129,14 +104,12 @@ def searchable(
         _document_class = document_class
 
         if not _document_class:
-            doc_factory = DynamicDocumentFactory(model_class)
-            _document_class = doc_factory.create()
+            _document_class = document_factory(model_class)
 
         index = Index(index_name or get_default_index_name(model_class))
         connect_signals(model_class, _document_class, index.name, rank=rank)
 
-        add_search_query_method(model_class)
-        if add_to_default_queryset:
+        if add_default_queryset_search_method:
             add_search_queryset_method(model_class)
 
         registry[model_class] = (index.name, _document_class, rank)
