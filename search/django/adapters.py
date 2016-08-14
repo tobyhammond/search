@@ -12,7 +12,6 @@ def resolve_filter_value(v):
 
     We can't pass model instances for example.
     """
-
     return getattr(v, 'pk', v)
 
 
@@ -23,15 +22,15 @@ class SearchQueryAdapter(object):
     We only implement 'enough' to allow it's use within a rest_framework
     viewset and django_filter Filterset.
     """
-
-    def __init__(self, query=None, model=None, queryset=None, _is_none=False):
+    def __init__(self, query=None, model=None, queryset=None, _is_none=False, ids_only=False):
         self._is_none = _is_none
         self._query = query
         self._queryset = queryset
+        self.ids_only = ids_only
         self.model = None if queryset is None else queryset.model
 
     @classmethod
-    def from_queryset(cls, queryset):
+    def from_queryset(cls, queryset, ids_only=False):
         if isinstance(queryset, cls):
             return queryset
 
@@ -39,13 +38,16 @@ class SearchQueryAdapter(object):
 
         search_query = cls.filters_to_search_query(filters, queryset.model)
 
-        return cls(search_query, queryset=queryset)
+        return cls(search_query, queryset=queryset, ids_only=ids_only)
 
     @classmethod
     def filters_to_search_query(cls, filters, model, query=None):
-        """Convert a list of nested lookups filters (a result of get_filters_from_queryset)
-        into a SearchQuery objects."""
-        search_query = query or model.search_query()
+        """Convert a list of nested lookups filters (a result of
+        get_filters_from_queryset) into a SearchQuery objects.
+        """
+        from .utils import get_search_query
+
+        search_query = query or get_search_query(model, ids_only=self.ids_only)
         connector = filters['connector']
         children = filters['children']
 
@@ -163,7 +165,9 @@ class SearchQueryAdapter(object):
         return self.__class__(
             model=self.model,
             queryset=self._queryset,
-            _is_none=self._is_none)
+            _is_none=self._is_none,
+            ids_only=self.ids_only
+        )
 
     def _transform_filters(self, *args, **kwargs):
         """Normalize a set of filter kwargs intended for Django queryset to
