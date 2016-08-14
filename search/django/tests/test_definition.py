@@ -14,6 +14,7 @@ from ..registry import registry
 from ..utils import (
     disable_indexing,
     get_uid,
+    get_search_query,
 )
 
 from .models import Foo, FooWithMeta, Related, FooDocument
@@ -38,13 +39,12 @@ class TestSearchable(TestCase):
 
         self.assertEqual(len(index_receivers), 1)
         self.assertEqual(len(unindex_receivers), 1)
-        self.assertTrue(hasattr(Foo, "search_query"))
 
     def test_search_query_method(self):
         # Only test you can do here really is that it doesn't error... Should
         # probably test to see that the resulting query is bound to the right
         # index and document class somehow
-        query = Foo.search_query()
+        query = get_search_query(Foo)
         self.assertEqual(type(query), SearchQuery)
 
     def test_search_method_on_queryset(self):
@@ -61,7 +61,7 @@ class TestSearchable(TestCase):
         Foo.objects.create(name="Box")
         Foo.objects.create(name="Square")
 
-        search_qs = Foo.objects.all().search('Box')
+        search_qs = Foo.objects.all().search(keywords='Box')
         self.assertTrue(isinstance(search_qs, SearchQueryAdapter))
 
         self.assertEqual(1, len(search_qs))
@@ -84,7 +84,7 @@ class TestSearchable(TestCase):
             tags=["other", "data"]
         )
 
-        query = Foo.search_query().keywords("Box")
+        query = get_search_query(Foo).keywords("Box")
         self.assertEqual(query.count(), 1)
 
         doc = query[0]
@@ -103,7 +103,7 @@ class TestSearchable(TestCase):
         except AssertionError:
             pass
 
-        query = Foo.search_query().keywords("Box")
+        query = get_search_query(Foo).keywords("Box")
         self.assertEqual(query.count(), 1)
 
     def test_unindex_on_delete_of_instance(self):
@@ -114,7 +114,7 @@ class TestSearchable(TestCase):
             relation=related,
             tags=["various", "things"]
         )
-        query = Foo.search_query().keywords("Box")
+        query = get_search_query(Foo).keywords("Box")
         self.assertEqual(query.count(), 1)
 
         # Same as above happens on delete...
@@ -123,7 +123,7 @@ class TestSearchable(TestCase):
         except AssertionError:
             pass
 
-        query = Foo.search_query().keywords("Box")
+        query = get_search_query(Foo).keywords("Box")
         self.assertEqual(query.count(), 0)
 
     def test_signals_not_run_when_indexing_disabled(self):
@@ -136,7 +136,7 @@ class TestSearchable(TestCase):
                 tags=["various", "things"]
             )
 
-        query = Foo.search_query().keywords("Box")
+        query = get_search_query(Foo).keywords("Box")
         self.assertEqual(query.count(), 0)
 
 
@@ -153,10 +153,9 @@ class TestSearchableMeta(TestCase):
 
         self.assertEqual(len(index_receivers), 1)
         self.assertEqual(len(unindex_receivers), 1)
-        self.assertTrue(hasattr(FooWithMeta, "search_query"))
 
     def test_search_query_method(self):
-        query = FooWithMeta.search_query()
+        query = get_search_query(FooWithMeta)
         self.assertEqual(type(query), SearchQuery)
 
     def test_field_types(self):
