@@ -31,23 +31,27 @@ class SearchQueryAdapter(object):
 
     @classmethod
     def from_queryset(cls, queryset, ids_only=False):
+        """Construct a query adapter from a Django queryset"""
+
         if isinstance(queryset, cls):
             return queryset
 
         filters = cls.get_filters_from_queryset(queryset)
-
-        search_query = cls.filters_to_search_query(filters, queryset.model)
-
+        search_query = cls.filters_to_search_query(
+            filters,
+            queryset.model,
+            ids_only=ids_only
+        )
         return cls(search_query, queryset=queryset, ids_only=ids_only)
 
     @classmethod
-    def filters_to_search_query(cls, filters, model, query=None):
+    def filters_to_search_query(cls, filters, model, query=None, ids_only=False):
         """Convert a list of nested lookups filters (a result of
         get_filters_from_queryset) into a SearchQuery objects.
         """
         from .utils import get_search_query
 
-        search_query = query or get_search_query(model, ids_only=self.ids_only)
+        search_query = query or get_search_query(model, ids_only=ids_only)
         connector = filters['connector']
         children = filters['children']
 
@@ -75,41 +79,43 @@ class SearchQueryAdapter(object):
     def get_filters_from_queryset(cls, queryset, where_node=None):
         """Translates django queryset filters into a nested dict of tuples
 
-        example:
-        queryset = Profile.objects.filter(given_name='pete').filter(Q(email='1@thing.com') | Q(email='2@thing.com'))
-        get_filters_from_queryset(queryset)
-        returns:
+        Example:
+
+        >>> queryset = (
+            Profile.objects
+                .filter(given_name='pete')
+                .filter(Q(email='1@thing.com') | Q(email='2@thing.com'))
+            )
+        >>> get_filters_from_queryset(queryset)
         {
             u'children': [
-                    (u'given_name', u'exact', 'pete'),
-                    {
-                        u'children': [
-                            (u'email', u'exact', '1@thing.com'),
-                            (u'email', u'exact', '2@thing.com')
-                        ],
-                        u'connector': u'OR'
-                    }
-                ],
+                (u'given_name', u'exact', 'pete'),
+                {
+                    u'children': [
+                        (u'email', u'exact', '1@thing.com'),
+                        (u'email', u'exact', '2@thing.com')
+                    ],
+                    u'connector': u'OR'
+                }
+            ],
             u'connector': u'AND'
         }
         """
         where_node = where_node or queryset.query.where
-
+        children = []
         node_filters = {
             u'connector': unicode(where_node.connector),
         }
 
-        children = []
-
         for node in where_node.children:
-            # Normalize expressions which are an AND with a single child and pull the
-            # use the child node as the expression instead.
-            # This happens if you add querysets together.
+            # Normalize expressions which are an AND with a single child and
+            # use the child node as the expression instead. This happens if you
+            # add whole querysets together.
             if getattr(node, 'connector', None) == 'AND' and len(node.children) == 1:
                 node = node.children[0]
 
             if isinstance(node, Lookup):  # Lookup
-                children.append(cls.build_lookup(node))
+                children.append(cls.normalize_lookup(node))
 
             else:  # WhereNode
                 children.append(
@@ -118,15 +124,16 @@ class SearchQueryAdapter(object):
                         node,
                     )
                 )
+
         node_filters[u'children'] = children
         return node_filters
 
     @classmethod
-    def build_lookup(cls, node):
-        """Converts Django Lookup into a single tuple
-        or a list of tuples if the lookup_name is IN
+    def normalize_lookup(cls, node):
+        """Converts Django Lookup into a single tuple or a list of tuples if
+        the lookup_name is IN
 
-        example for lookup_name IN and rhs ['1@thing.com', '2@thing.com']:
+        Example for lookup_name IN and rhs ['1@thing.com', '2@thing.com']:
         {
             u'connector': u'OR',
             u'children': [
@@ -135,8 +142,8 @@ class SearchQueryAdapter(object):
             ]
         }
 
-        example for lookup_name that's not IN (exact in this case) and value '1@thing.com':
-        (u'email', u'=', u'1@thing.com')
+        Example for lookup_name that's not IN (exact in this case) and value
+        '1@thing.com': (u'email', u'=', u'1@thing.com')
         """
         target = unicode(node.lhs.target.name)
         lookup_name = unicode(node.lookup_name)
@@ -199,10 +206,12 @@ class SearchQueryAdapter(object):
         # the list back into whatever order the pks from the search API were in
         objects_by_pk = {o.pk: o for o in results}
         results = []
+
         for pk in doc_pks:
             if pk not in objects_by_pk:
                 logging.warning(
-                    "%s with PK %d doesn't exist, but search returned it!" % (self.model.__name__, pk),
+                    "{} with PK {} doesn't exist, but search returned it!"
+                    .format(self.model.__name__, pk),
                 )
                 continue
 
