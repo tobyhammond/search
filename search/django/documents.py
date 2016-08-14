@@ -196,3 +196,15 @@ class DynamicDocument(Document):
         tokens = tokens.difference(set(words))
 
         return u'{} {}'.format(u' '.join(words), u' '.join(tokens))
+
+
+def document_factory(model):
+    """Shortcut to the document factory creation.
+
+    Args:
+        model: The Django model to produce a document class for
+
+    Returns:
+        A document class matching the Django model
+    """
+    return DynamicDocumentFactory(model).create()
