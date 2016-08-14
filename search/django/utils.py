@@ -10,7 +10,10 @@ except ImportError:
 else:
     HAS_UNIDECODE = True
 
+from ..indexes import Index
+
 from .adapters import SearchQueryAdapter
+from .registry import registry
 
 
 status = threading.local()
@@ -200,3 +203,25 @@ enable_indexing = EnableIndexing()
 
 def get_datetime_field():
     return fields.TZDateTimeField if settings.USE_TZ else fields.DateTimeField
+
+
+def get_search_query(model_class, ids_only=False):
+    """Construct a search query bound to the index and document class registered
+    for the given Django model class.
+
+    Args:
+        model_class: A Django model class
+        ids_only: Whether to only return the IDs from the search query
+
+    Returns:
+        A raw search.Query object bound to the default index and document class
+        for the given model.
+    """
+    search_meta = registry.get(model_class)
+
+    if not search_meta:
+        raise RegisterError(u"This model isn't registered with @searchable")
+
+    index_name, document_class, _ = search_meta
+    index = Index(index_name)
+    return index.search(document_class=document_class, ids_only=ids_only)
