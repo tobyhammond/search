@@ -220,7 +220,7 @@ def get_search_query(model_class, ids_only=False):
     search_meta = registry.get(model_class)
 
     if not search_meta:
-        raise RegisterError(u"This model isn't registered with @searchable")
+        raise registry.RegisterError(u"This model isn't registered with @searchable")
 
     index_name, document_class, _ = search_meta
     index = Index(index_name)
