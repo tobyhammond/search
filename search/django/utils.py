@@ -13,7 +13,6 @@ else:
 from .. import fields
 from ..indexes import Index
 
-from .adapters import SearchQueryAdapter
 from .registry import registry
 
 
