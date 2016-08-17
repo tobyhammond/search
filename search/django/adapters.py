@@ -82,9 +82,9 @@ class SearchQueryAdapter(object):
         Example:
 
         >>> queryset = (
-            Profile.objects
-                .filter(given_name='pete')
-                .filter(Q(email='1@thing.com') | Q(email='2@thing.com'))
+                Profile.objects
+                    .filter(given_name='pete')
+                    .filter(Q(email='1@thing.com') | Q(email='2@thing.com'))
             )
         >>> get_filters_from_queryset(queryset)
         {
@@ -232,9 +232,12 @@ class SearchQueryAdapter(object):
             return self._query.__iter__()
 
     def __getitem__(self, s):
-        clone = self._clone()
-        clone._query = self._query.__getitem__(s)
-        return clone
+        if isinstance(s, slice):
+            clone = self._clone()
+            clone._query = self._query.__getitem__(s)
+            return clone
+        else:
+            return self._query.__getitem__(s)
 
     def filter(self, *args, **kwargs):
         args, kwargs = self._transform_filters(*args, **kwargs)
