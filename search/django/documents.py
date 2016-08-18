@@ -30,6 +30,21 @@ class Document(indexes.DocumentModel):
         self.build(instance)
         self.corpus = self.build_corpus()
 
+    def build_corpus_from_definition(self, corpus_definition):
+        tokens = set()
+        words = []
+        for field_name, index_fn in corpus_definition.items():
+            field_value = getattr(self, field_name)
+            tokens = tokens.union(set(index_fn(field_value)))
+
+            for word in field_value.split(' '):
+                words.append(word)
+
+        # discard any words from the tokens
+        tokens = tokens.difference(set(words))
+
+        return u'{} {}'.format(u' '.join(words), u' '.join(tokens))
+
     def build(self, instance):
         raise NotImplementedError()
 
@@ -183,19 +198,7 @@ class DynamicDocument(Document):
         if not corpus_meta:
             return ''
 
-        tokens = set()
-        words = []
-        for field_name, index_fn in corpus_meta.items():
-            field_value = getattr(self, field_name)
-            tokens = tokens.union(set(index_fn(field_value)))
-
-            for word in field_value.split(' '):
-                words.append(word)
-
-        # discard any words from the tokens
-        tokens = tokens.difference(set(words))
-
-        return u'{} {}'.format(u' '.join(words), u' '.join(tokens))
+        return self.build_corpus_from_definition(corpus_meta)
 
 
 def document_factory(model):
