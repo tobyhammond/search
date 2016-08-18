@@ -132,6 +132,12 @@ def firstletter(string, ignore=None):
         return ['']
 
 
+def literal(value):
+    """Essentially a noop indexer
+    """
+    return (value,)
+
+
 def anglicise_char(char):
     u"""Tries to get the closest lexical match in the Latin alphabet for the
     given 'foreign' character, including dipthongs.

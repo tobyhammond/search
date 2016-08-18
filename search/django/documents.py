@@ -4,6 +4,7 @@ from django.db import models
 
 from djangae import fields as djangae_fields
 
+from ... import indexers
 from .. import fields, indexes
 
 from .utils import get_datetime_field
@@ -35,6 +36,9 @@ class Document(indexes.DocumentModel):
         words = []
         for field_name, index_fn in corpus_definition.items():
             field_value = getattr(self, field_name)
+            if not index_fn:
+                import pdb;pdb.set_trace();
+                index_fn = indexers.literal
             tokens = tokens.union(set(index_fn(field_value)))
 
             for word in field_value.split(' '):
