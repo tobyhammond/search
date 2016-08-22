@@ -1,10 +1,10 @@
-from django.conf import settings
 from django.core import exceptions
 from django.db import models
 
 from djangae import fields as djangae_fields
 
 from .. import fields, indexes, indexers
+from ..utils import get_value_map
 
 from .utils import get_datetime_field
 
@@ -183,15 +183,7 @@ class DynamicDocument(Document):
         if not corpus_meta:
             return ''
 
-        return indexers.build_corpus(**self.get_value_map(corpus_meta))
-
-    def get_value_map(self, corpus_meta):
-        value_map = {}
-        for field_name, index_fn in corpus_meta.items():
-            field_value = getattr(self, field_name, None)
-            if field_value:
-                value_map[field_value] = index_fn
-        return value_map
+        return indexers.build_corpus(**get_value_map(self, corpus_meta))
 
 
 def document_factory(model):
