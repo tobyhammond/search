@@ -37,7 +37,6 @@ class Document(indexes.DocumentModel):
         for field_name, index_fn in corpus_definition.items():
             field_value = getattr(self, field_name)
             if not index_fn:
-                import pdb;pdb.set_trace();
                 index_fn = indexers.literal
             tokens = tokens.union(set(index_fn(field_value)))
 
