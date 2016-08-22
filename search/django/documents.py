@@ -4,8 +4,7 @@ from django.db import models
 
 from djangae import fields as djangae_fields
 
-from ... import indexers
-from .. import fields, indexes
+from .. import fields, indexes, indexers
 
 from .utils import get_datetime_field
 
@@ -30,23 +29,6 @@ class Document(indexes.DocumentModel):
         self.program = str(getattr(instance, "program_id", None))
         self.build(instance)
         self.corpus = self.build_corpus()
-
-    def build_corpus_from_definition(self, corpus_definition):
-        tokens = set()
-        words = []
-        for field_name, index_fn in corpus_definition.items():
-            field_value = getattr(self, field_name)
-            if not index_fn:
-                index_fn = indexers.literal
-            tokens = tokens.union(set(index_fn(field_value)))
-
-            for word in field_value.split(' '):
-                words.append(word)
-
-        # discard any words from the tokens
-        tokens = tokens.difference(set(words))
-
-        return u'{} {}'.format(u' '.join(words), u' '.join(tokens))
 
     def build(self, instance):
         raise NotImplementedError()
@@ -201,7 +183,15 @@ class DynamicDocument(Document):
         if not corpus_meta:
             return ''
 
-        return self.build_corpus_from_definition(corpus_meta)
+        return indexers.build_corpus(**self.get_value_map(corpus_meta))
+
+    def get_value_map(self, corpus_meta):
+        value_map = {}
+        for field_name, index_fn in corpus_meta.items():
+            field_value = getattr(self, field_name, None)
+            if field_value:
+                value_map[field_value] = index_fn
+        return value_map
 
 
 def document_factory(model):
