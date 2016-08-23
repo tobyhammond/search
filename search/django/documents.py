@@ -46,9 +46,9 @@ class DocumentOptions(object):
     subclass.
     """
     def __init__(self, meta):
-        self.field_names = getattr(meta, 'fields', [])
-        self.field_types = getattr(meta, 'field_types', {})
         self.field_mappers = getattr(meta, 'field_mappers', {})
+        self.field_names = set(getattr(meta, 'fields', []) + self.field_mappers.keys())
+        self.field_types = getattr(meta, 'field_types', {})
         self.corpus = getattr(meta, 'corpus', {})
         self.fields = {}
 
