@@ -6,6 +6,7 @@ from ..indexes import Index
 
 from .adapters import SearchQueryAdapter
 from .documents import document_factory
+from .indexes import index_instance, unindex_instance
 from .registry import registry
 from .utils import (
     get_default_index_name,
@@ -31,19 +32,12 @@ def connect_signals(model_class, document_class, index_name, rank=None):
     @receiver(post_save, sender=model_class, dispatch_uid=uid, weak=False)
     def index(sender, instance, **kwargs):
         if indexing_is_enabled():
-            doc = document_class(
-                doc_id=str(instance.pk),
-                _rank=get_rank(instance, rank=rank)
-            )
-            doc.build_base(instance)
-            index = Index(index_name)
-            index.put(doc)
+            index_instance(instance)
 
     @receiver(pre_delete, sender=model_class, dispatch_uid=uid, weak=False)
     def unindex(sender, instance, **kwargs):
         if indexing_is_enabled():
-            index = Index(index_name)
-            index.delete(str(instance.pk))
+            unindex_instance(instance)
 
 
 def add_search_queryset_method(model_class):

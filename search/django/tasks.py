@@ -9,7 +9,7 @@ from djangae.contrib.mappers.pipes import MapReduceTask
 
 from ..indexes import Index
 
-from .indexes import get_index_for_doc
+from .indexes import get_index_for_doc, index_instance
 from .registry import registry
 from .utils import get_rank
 
@@ -27,24 +27,15 @@ class ReindexMapReduceTask(MapReduceTask):
 
     @staticmethod
     def map(instance, *args, **kwargs):
-        model = type(instance)
-        search_meta = registry.get(model)
-
-        if search_meta:
-            index_name, document_class, rank = search_meta
-            doc = document_class(
-                doc_id=str(instance.pk),
-                _rank=get_rank(instance, rank=rank)
+        indexed = index_instance(instance)
+        if indexed:
+            logging.info(
+                u"Indexed {}: {}".format(type(instance).__name__, instance.pk)
             )
-            doc.build_base(instance)
-            index = Index(index_name)
-            index.put(doc)
-
-            logging.info(u"Indexed {}: {}".format(model.__name__, instance.pk))
         else:
             logging.info(
                 u"Model {} isn't registered as being searchable"
-                .format(model.__name__)
+                .format(type(instance).__name__)
             )
 
 
