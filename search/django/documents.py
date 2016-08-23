@@ -28,12 +28,12 @@ class Document(indexes.DocumentModel):
         self.pk = str(instance.pk)
         self.program = str(getattr(instance, "program_id", None))
         self.build(instance)
-        self.corpus = self.build_corpus()
+        self.corpus = self.build_corpus(instance)
 
     def build(self, instance):
         raise NotImplementedError()
 
-    def build_corpus(self):
+    def build_corpus(self, instance):
         """Build the value for the document's corpus field. This is usually the
         field used for keyword searching.
         """
@@ -174,7 +174,7 @@ class DynamicDocument(Document):
             value = self.map_field_value(instance, field_name)
             setattr(self, field_name, value)
 
-    def build_corpus(self):
+    def build_corpus(self, instance):
         # Some default behaviour for building the corpus. Indexes the plain
         # content of each field in the corpus plus the indexed version of the
         # content
@@ -183,7 +183,7 @@ class DynamicDocument(Document):
         if not corpus_meta:
             return ''
 
-        return indexers.build_corpus(**get_value_map(self, corpus_meta))
+        return indexers.build_corpus(**get_value_map(instance, corpus_meta))
 
 
 def document_factory(model):

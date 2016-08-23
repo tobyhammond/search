@@ -60,5 +60,5 @@ class FooWithMeta(FooBase):
         }
         corpus = {
             'name': search_indexers.startswith,
-            'relation': search_indexers.contains
+            'relation.name': search_indexers.contains
         }
