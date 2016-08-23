@@ -113,6 +113,7 @@ class DynamicDocumentFactory(object):
             new_cls._meta.fields[field_name] = field
 
     def get_field(self, field_name):
+        django_field = None
         try:
             django_field = self.model_class._meta.get_field(field_name)
         except exceptions.FieldDoesNotExist:
