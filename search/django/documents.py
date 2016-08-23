@@ -117,7 +117,7 @@ class DynamicDocumentFactory(object):
             django_field = self.model_class._meta.get_field(field_name)
         except exceptions.FieldDoesNotExist:
             if field_name not in self.meta.field_mappers:
-                    raise Exception(
+                raise Exception(
                     u'{field_name} is not a field on the Django model and '
                     'does not have a field_mapper defined for it.'
                     .format(field_name=field_name)
@@ -135,12 +135,7 @@ class DynamicDocumentFactory(object):
                 field_cls = self.django_type_map.get(django_field.__class__)
 
             if not field_cls:
-                raise Exception(
-                    u'{field_name} of type {django_field.__class__} '
-                    'cannot be automatically mapped to a search field type. '
-                    'Try explicitly defining the field in SearchMeta.field_types'
-                    .format(field_name=field_name, django_field=django_field)
-                )
+                field_cls = fields.TextField
 
             field = field_cls()
 
