@@ -161,7 +161,7 @@ class DynamicDocument(Document):
 
             # This is the best guess for if we get a sequence back
             if isinstance(value, (list, set,)):
-                value = u" ".join(value)
+                value = u" ".join(map(unicode, list(value)))
 
         return value
 
