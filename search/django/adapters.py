@@ -129,6 +129,36 @@ class SearchQueryAdapter(object):
         return node_filters
 
     @classmethod
+    def model_q_to_search_q(cls, _q):
+        """Transform a `django.db.model.Q` tree to `search.ql.Q` tree.
+
+        TODO: handle negation
+        """
+
+        if type(_q) is tuple:
+            k, v = _q
+            return (k, resolve_filter_value(v))
+
+        if not _q.children:
+            return None
+
+        q = SearchQ()
+        q.conn = _q.connector
+        q.children = filter(
+            lambda x: x is not None,
+            map(cls. model_q_to_search_q, _q.children)
+        )
+        q.inverted = _q.negated
+
+        if not q.children:
+            return None
+
+        # TODO: handle negation?
+
+        return q
+
+
+    @classmethod
     def normalize_lookup(cls, node):
         """Converts Django Lookup into a single tuple or a list of tuples if
         the lookup_name is IN
@@ -184,7 +214,7 @@ class SearchQueryAdapter(object):
         """
 
         _args = [
-            self.get_filters_from_queryset(_q) if type(_q) is DjangoQ else _q
+            self.model_q_to_search_q(_q) if type(_q) is DjangoQ else _q
             for _q in args
         ]
         _kwargs = {k: resolve_filter_value(v) for k, v in kwargs.iteritems()}
