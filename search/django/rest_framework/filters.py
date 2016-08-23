@@ -2,7 +2,7 @@ import string as string_module
 
 
 QUOTES = (u"'", u'"')
-ALLOWED_PUNCTUATION = (u"_", u"-")
+ALLOWED_PUNCTUATION = (u"_", u"-", u"@", u'.')
 
 
 class KeywordSearch(object):
@@ -60,32 +60,51 @@ def strip_multi_value_operators(string):
     # the search API source code lists many operators in the tokenNames
     # iterable, but it feels cleaner for now to explicitly name only the ones
     # we are interested in here
-    operator_tokens = ("OR", "AND")
-    last_word_in_string = string.strip().split()[-1]
-    if last_word_in_string in operator_tokens:
-        return string.rstrip(last_word_in_string)
+    if string:
+        operator_tokens = ("OR", "AND")
+        for token in operator_tokens:
+            string = string.strip().strip(token)
     return string
 
 
-def filter_search(queryset, value):
-    exact = False
+def build_corpus_search(queryset, value):
+    """Builds up a corpus search taking into account words which may contain
+    punctuation causes a string to be tokenised by the search API and searches those
+    terms exactly
+    """
+    value = strip_special_search_characters(value)
 
+    # pull out words containing ALLOWED_PUNCTUATION and search with exact
+    # this is mainly for searching for email addresses within the corpus
+    terms = []
+    for term in value.split(' '):
+        if any(c in ALLOWED_PUNCTUATION for c in term):
+            queryset = queryset.filter(corpus=term)
+        else:
+            terms.append(term)
+
+    value = u' '.join(terms)
+
+    value = strip_multi_value_operators(value)
+
+    if value:
+        # TODO: this doesn't handle users searching for an email address AND other terms
+        queryset = queryset.filter(corpus__contains=value)
+
+    return queryset
+
+
+def filter_search(queryset, value):
     if not value:
         return queryset
 
-    # If the user wrapped their entire search in quotes, there's a good chance
-    # they're looking for that exact string, so switch to using implied
-    # `__exact` filtering, and remove the surrounding quotes
-    if is_wrapped_in_quotes(value):
-        exact = True
-        value = strip_surrounding_quotes(value)
-
-    value = strip_special_search_characters(value)
-    value = strip_multi_value_operators(value)
+    exact = is_wrapped_in_quotes(value)
+    value = strip_surrounding_quotes(value)
 
     if exact:
+        # whole search term is exact
         return queryset.filter(corpus=value)
 
-    # ...otherwise, search normally
-    return queryset.filter(corpus__contains=value)
+    queryset = build_corpus_search(queryset, value)
 
+    return queryset
