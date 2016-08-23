@@ -2,7 +2,7 @@ import operator
 
 
 def get_value_map(obj, mapping):
-    value_map = {}
+    value_map = []
     for field_name, fn in mapping.items():
     	try:
         	field_value = operator.attrgetter(field_name)(obj)
@@ -10,5 +10,5 @@ def get_value_map(obj, mapping):
     		field_value = None
 
         if field_value:
-            value_map[field_value] = fn
+            value_map.append((field_value, fn,))
     return value_map

@@ -11,13 +11,13 @@ PUNCTUATION_REGEX = re.compile(ur'[^\w -\'"+]', re.U)
 WHITESPACE_REGEX = re.compile(ur'[\s]+', re.U)
 
 
-def build_corpus(**value_map):
+def build_corpus(*value_map):
     """Takes a mapping of indexable values to functions and returns a string to
     use as a document corpus
     """
     tokens = set()
     words = []
-    for value, index_fn in value_map.items():
+    for value, index_fn in value_map:
         if not index_fn:
             index_fn = literal
         tokens = tokens.union(set(index_fn(value)))

@@ -179,7 +179,7 @@ class DynamicDocument(Document):
         if not corpus_meta:
             return ''
 
-        return indexers.build_corpus(**get_value_map(instance, corpus_meta))
+        return indexers.build_corpus(*get_value_map(instance, corpus_meta))
 
 
 def document_factory(model):
