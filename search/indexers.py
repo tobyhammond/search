@@ -22,8 +22,12 @@ def build_corpus(*value_map):
             index_fn = literal
         tokens = tokens.union(set(index_fn(value)))
 
-        for word in value.split(' '):
-            words.append(word)
+        # FIXME: We may not always wish to include the original value in the
+        # corpus, only the result of `index_fn(value)`, for now we just skip
+        # non-string values but it would be nice if this were more flexible.
+        if isinstance(value, basestring):
+            for word in value.split(' '):
+                words.append(word)
 
     # discard any words from the tokens
     tokens = tokens.difference(set(words))
