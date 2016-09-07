@@ -2,6 +2,7 @@ from django.core import exceptions
 from django.db import models
 
 from djangae import fields as djangae_fields
+from djangae.db import transaction
 
 from .. import fields, indexes, indexers
 from ..utils import get_value_map
@@ -27,8 +28,10 @@ class Document(indexes.DocumentModel):
         """
         self.pk = str(instance.pk)
         self.program = str(getattr(instance, "program_id", None))
-        self.build(instance)
-        self.corpus = self.build_corpus(instance)
+
+        with transaction.non_atomic():
+            self.build(instance)
+            self.corpus = self.build_corpus(instance)
 
     def build(self, instance):
         raise NotImplementedError()
