@@ -17,10 +17,13 @@ class KeywordSearch(object):
 
     def filter_queryset(self, request, queryset, view):
         if getattr(view, "is_searching", lambda: False)():
-            query = request.GET.get(self.get_param)
+            query = self.get_search_query(request)
             if query:
                 return filter_search(queryset, query)
         return queryset
+
+    def get_search_query(self, request):
+        return request.GET.get(self.get_param)
 
 
 def is_wrapped_in_quotes(string):

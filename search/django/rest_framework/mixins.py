@@ -24,6 +24,7 @@ class SearchMixin(object):
     """
     search_queryset = None
     search_param_name = "search"
+    search_filter_class = KeywordSearch
     ordering_param_name = "order"
     use_search_for_ordering = True
     pagination_class = SearchPageNumberPagination
@@ -33,7 +34,7 @@ class SearchMixin(object):
         if hasattr(self, "filter_backends"):
             self.filter_backends = (
                 self.filter_backends[:] +
-                [KeywordSearch(get_param=self.search_param_name)]
+                [self.search_filter_class(get_param=self.search_param_name)]
             )
 
     def get_search_queryset(self):
