@@ -1,7 +1,7 @@
 import logging
 
 from google.appengine.api import search
-
+from django.conf import settings
 from rest_framework import response
 
 from ...indexers import clean_value
@@ -65,6 +65,10 @@ class SearchMixin(object):
             page = None
             queryset = []
 
+        if self.is_searching():
+            # patch the raw query onto the object for get_paginated_response to use
+            self._raw_query = str(queryset._query.query)
+
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
@@ -79,3 +83,11 @@ class SearchMixin(object):
             self.ordering_param_name in self.request.GET
         )
         return self.action == "list" and (query or use_for_ordering)
+
+    def get_paginated_response(self, data):
+        resp = super(SearchMixin, self).get_paginated_response(data)
+
+        if settings.DEBUG and hasattr(self, '_raw_query'):
+            resp.data['raw_query'] = self._raw_query
+
+        return resp
