@@ -1,3 +1,4 @@
+import re
 import string as string_module
 
 
@@ -64,9 +65,9 @@ def strip_multi_value_operators(string):
     # iterable, but it feels cleaner for now to explicitly name only the ones
     # we are interested in here
     if string:
-        operator_tokens = ("OR", "AND")
-        for token in operator_tokens:
-            string = string.strip().strip(token)
+        string = re.sub(r'^(OR|AND)', '', string)
+        string = re.sub(r'(OR|AND)$', '', string)
+        string = string.strip()
     return string
 
 
