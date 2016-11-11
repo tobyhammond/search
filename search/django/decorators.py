@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils.module_loading import import_string
 
@@ -17,7 +17,7 @@ from .utils import (
 
 
 def connect_signals(model_class, document_class, index_name, rank=None):
-    """Wire up `model_class`'s `post_save` and `pre_delete` signals to
+    """Wire up `model_class`'s `post_save` and `post_delete` signals to
     receivers that will index and unindex instances when saved and deleted.
 
     Args:
@@ -34,7 +34,7 @@ def connect_signals(model_class, document_class, index_name, rank=None):
         if indexing_is_enabled():
             index_instance(instance)
 
-    @receiver(pre_delete, sender=model_class, dispatch_uid=uid, weak=False)
+    @receiver(post_delete, sender=model_class, dispatch_uid=uid, weak=False)
     def unindex(sender, instance, **kwargs):
         if indexing_is_enabled():
             unindex_instance(instance)
